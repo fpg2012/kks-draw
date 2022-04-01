@@ -205,7 +205,7 @@
             }
 
             function join_game(game_code) {
-                websocket = new WebSocket('ws://' + window.location.host + '/game/' + encodeURIComponent(game_code));
+                websocket = new WebSocket('wss://' + window.location.host + '/game/' + encodeURIComponent(game_code));
                 websocket.addEventListener('open', function(event) {
                     websocket.send(JSON.stringify({
                         "method": "join",
