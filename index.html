@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+            @font-face {
+                font-family: 'Fira Sans';
+                src: url('./font/FiraSans-Regular.woff2');
+            }
+
+            @font-face {
+                font-family: 'Fira Mono';
+                src: url('./font/FiraMono-Regular.woff2');
+            }
+
+            html {
+                font-size: 14px;
+                font-family: 'Fira Sans', 'Noto Sans', BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif
+            }
+            main {
+                display: flex;
+                flex-direction: column;
+                justify-content: flex-start;
+                align-items: center;
+                max-width: 20rem;
+                margin: auto;
+            }
+            .code-input {
+                font-family: 'Fira Mono', 'JetBrains Mono', 'Roboto Mono', 'Courier New', Courier, monospace;
+            }
+            .input-and-button {
+                display: flex;
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+            .input-and-button>input {
+                flex: 1;
+            }
+            .input-and-button>button {
+                flex: 1;
+            }
+            .img-display {
+                flex: 1;
+                display: block;
+                padding: 0;
+                border-radius: 5px;
+                margin: 1em;
+            }
+            .img-display>img {
+                border-radius: 5px;
+                width: 100%;
+                height: 100%;
+                /* object-fit: cover; */
+                object-position: center;
+            }
+            button {
+                background-color: rgb(78, 105, 23);
+                object-fit: cover;
+                border: none;
+                border-radius: 5px;
+                color: aliceblue;
+                padding: 0.5rem;
+                margin: 0.5rem 0.5rem 0.5rem 0.5rem;
+                font-size: 1.6rem;
+                cursor: pointer;
+                font-family: 'Fira Sans', 'Noto Sans', BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+                transition: background-color 1s cubic-bezier(0.075, 0.82, 0.165, 1);
+            }
+            button:disabled {
+                background-color: rgb(131, 131, 131);
+                transition: background-color 1s cubic-bezier(0.075, 0.82, 0.165, 1);
+            }
+            button:disabled:hover {
+                background-color: rgb(131, 131, 131);
+                transition: background-color 1s cubic-bezier(0.075, 0.82, 0.165, 1);
+                cursor: default;
+            }
+            button:hover {
+                background-color: rgb(130, 172, 47);
+                transition: background-color 1s cubic-bezier(0.075, 0.82, 0.165, 1);
+            }
+            input[type=text] {
+                border-radius: 5px;
+                border: solid 2px gainsboro;
+                padding: 0.5rem;
+                margin: 0.5rem 0.5rem 0.5rem 0.5rem;
+                font-size: 1.6rem;
+                text-align: center;
+                transition: border-color 1s cubic-bezier(0.075, 0.82, 0.165, 1);
+            }
+            input[type=text]:disabled {
+                color: rgb(128, 128, 128);
+            }
+            input[type=text]:hover {
+                border-color: dimgrey;
+                transition: border-color 1s cubic-bezier(0.075, 0.82, 0.165, 1);
+            }
+            .tile-code {
+                font-size: 2.5rem;
+                margin: 1rem;
+            }
+            .in-game-players {
+                color: gray;
+                font-size: 1rem;
+                padding: 1rem;
+            }
+            .last-drawer {
+                color: gray;
+                font-size: 1.2rem;
+            }
+        </style>
+        <title>Carcassonne</title>
+    </head>
+    <body>
+
+        <main>
+            <div class="game-control input-and-button">
+                <input type="text" id="name-input" class="code-input", placeholder="your name">
+                <input type="text" id="game-code-input" class="code-input" placeholder="game code">
+                <button id="join-btn">New</button>
+            </div>
+            <div class="tile-code" id="tile-code-display">CRFRC</div>
+            <div class="last-drawer" id="last-drawer-display">base</div>
+            <div class="img-display">
+                <img src="./tiles/CRFRR.png" id="tile-img">
+            </div>
+            <div class="draw-area input-and-button">
+                <input type="text" id="draw-code-input" class="code-input" placeholder="draw code">
+                <button id="draw-btn">Draw</button>
+            </div>
+            <div class="in-game-players" id="in-game-player-list">offline</div>
+        </main>
+        
+        <script>
+            var server_url = window.location.host;
+
+            var join_button = document.getElementById("join-btn");
+            var draw_button = document.getElementById("draw-btn");
+
+            var draw_code_input = document.getElementById("draw-code-input");
+            draw_code_input.addEventListener('input', function(e) {
+                e.srcElement.value = e.srcElement.value.toUpperCase().slice(0, 4);
+            });
+
+            var game_code_input = document.getElementById("game-code-input");
+            game_code_input.addEventListener('input', function(e) {
+                var len = 6;
+                if (e.srcElement.value.startsWith(":")) {
+                    len = 7;
+                }
+                e.srcElement.value = e.srcElement.value.slice(0, len).toUpperCase();
+                if (e.srcElement.value != '' && e.srcElement.value != ':') {
+                    join_button.textContent = "Join";
+                } else {
+                    join_button.textContent = "New";
+                }
+            });
+            var name_input = document.getElementById("name-input");
+            name_input.addEventListener('input', function(e) {
+                e.srcElement.value = e.srcElement.value.slice(0, 8);
+            })
+
+            var tile_img = document.getElementById("tile-img");
+            var tile_code_display = document.getElementById("tile-code-display");
+            var last_drawer_display = document.getElementById("last-drawer-display");
+
+            var in_game_players = []
+            var in_game_player_list = document.getElementById("in-game-player-list");
+
+            // init
+            // in-game-drawable
+            // in-game-wait-for-draw-ok
+            // in-game-undrawable
+            var state = 'init';
+            var websocket = null;
+
+            function update_in_game_players() {
+                if (in_game_players.length == 0) {
+                    in_game_player_list.textContent = "offline";
+                } else {
+                    in_game_player_list.textContent = "online: " + in_game_players.join(', ');
+                }
+            }
+
+            function return_to_init_state() {
+                name_input.removeAttribute('disabled');
+                game_code_input.removeAttribute('disabled');
+            }
+
+            function disable_draw() {
+                draw_code_input.setAttribute('disabled', '');
+                draw_button.setAttribute('disabled', '');
+            }
+
+            function enable_draw() {
+                draw_code_input.value = '';
+                draw_code_input.removeAttribute('disabled');
+                draw_button.removeAttribute('disabled');
+            }
+
+            function update_tile(tile) {
+                tile_img.setAttribute('src', './tiles/' + tile + '.png');
+                tile_code_display.textContent = tile;
+            }
+
+            function join_game(game_code) {
+                websocket = new WebSocket('ws://' + window.location.host + '/game/' + encodeURIComponent(game_code));
+                websocket.addEventListener('open', function(event) {
+                    websocket.send(JSON.stringify({
+                        "method": "join",
+                        "name": name_input.value,
+                    }));
+                    state = "in-game-drawable";
+                })
+                websocket.addEventListener('message', function(event) {
+                    data = JSON.parse(event.data);
+                    console.log(data);
+                    switch(data["event"]) {
+                        case "update_user_list":
+                            in_game_players = data["in_game_players"];
+                            update_in_game_players();
+                            break;
+                        case "tile":
+                            tile_code = data['tile'];
+                            update_tile(tile_code);
+                            last_drawer_display.textContent = data["drawer"];
+                            if (state == "in-game-undrawable") {
+                                enable_draw();
+                                state = "in-game-drawable";
+                            }
+                            break;
+                        case "draw_ok":
+                            if (state != "in-game-wait-for-draw-ok") {
+                                break;
+                            }
+                            draw_code_input.value = data["next_draw_code"];
+                            disable_draw();
+                            state = "in-game-undrawable";
+                            break;
+                        case "error":
+                            if (state == "in-game-wait-for-draw-ok") {
+                                state = "in-game-drawable";
+                            }
+                            break;
+                        default:
+                            alert("error");
+                    }
+                })
+            }
+
+            join_button.onclick = function(e) {
+                if (name_input.value == '') {
+                    name_input.value = Math.floor(Math.random() * 10000).toString();
+                    name_input.setAttribute('disabled', '');
+                }
+                if (game_code_input.value.startsWith(":")) {
+                    server_url = "localhost:6037";
+                    game_code_input.value = game_code_input.value.slice(1);
+                }
+                if (join_button.textContent == 'Join') {
+                    join_game(game_code_input.value);
+                    game_code_input.setAttribute('disabled', '');
+                    join_button.setAttribute('disabled', '');
+                } else {
+                    fetch('/' + 'code')
+                    .then(response => response.json())
+                    .then(data => {
+                        game_code_input.value = data['game_code'];
+                        game_code_input.setAttribute('disabled', '');
+                        join_button.setAttribute('disabled', '');
+                        draw_code_input.value = data['draw_code'];
+
+                        join_game(data['game_code']);
+                    });
+                    
+                }
+            }
+
+            draw_button.onclick = function(e) {
+                if (state == "in-game-drawable") {
+                    if (draw_code_input.value == "") {
+                        alert("no draw code!");
+                        return;
+                    }
+                    websocket.send(JSON.stringify({
+                        "method": "draw",
+                        "draw_code": draw_code_input.value,
+                    }));
+                    state = "in-game-wait-for-draw-ok";
+                }
+            };
+        </script>
+    </body>
+</html>
