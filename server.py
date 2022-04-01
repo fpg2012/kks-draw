@@ -5,6 +5,7 @@ import tornado.web
 import tornado.websocket
 import tornado.ioloop
 import tornado.httpserver
+import tornado.options
 from tornado.escape import url_escape, url_unescape
 import random
 import json
@@ -226,10 +227,12 @@ class MainHandler(tornado.web.RequestHandler):
             self.finish()
 
 if __name__ == '__main__':
+    tornado.options.define("port", default=6037, help="port to listen on")
+    tornado.options.parse_command_line()
     application = tornado.web.Application([
-        (r'/static/(.*)', tornado.web.StaticFileHandler, { 'path': '.', 'default_filename': 'index.html' }),
         (r'/code', NewGameHandler),
         (r'/game/.*', PlayerHandler),
+        (r'/(.*)', tornado.web.StaticFileHandler, { 'path': '.', 'default_filename': 'index.html' }),
     ])
-    application.listen("6037")
+    application.listen(tornado.options.options.port)
     tornado.ioloop.IOLoop.current().start()
