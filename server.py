@@ -23,6 +23,7 @@ class Game:
         self.last_drawer = None
         self.manager = manager
     
+    @property
     def deck_size(self):
         return len(self.deck)
 
@@ -37,6 +38,7 @@ class Game:
             "event": "tile",
             "tile": self.deck.pop(),
             'drawer': drawer.name,
+            'remain': self.deck_size,
         }))
 
     @property
@@ -167,6 +169,7 @@ class PlayerHandler(tornado.websocket.WebSocketHandler):
                 'event': 'tile',
                 'tile': self.game.current_tile,
                 'drawer': last_drawer,
+                'remain': self.game.deck_size,
             }))
         except tornado.websocket.WebSocketClosedError:
             self.game.remove_conn(self)

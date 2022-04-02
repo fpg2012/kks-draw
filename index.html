@@ -121,7 +121,8 @@
                 <button id="join-btn">New</button>
             </div>
             <div class="tile-code" id="tile-code-display">CRFRC</div>
-            <div class="last-drawer" id="last-drawer-display">base</div>
+            <div class="last-drawer"><span id="last-drawer-display">base</span></div>
+            <div class="last-drawer">Remain: <span id="deck-size">??</span></div>
             <div class="img-display">
                 <img src="./tiles/CRFRR.png" id="tile-img">
             </div>
@@ -133,6 +134,7 @@
         </main>
         
         <script>
+            var test_mode = false;
             var server_url = window.location.host;
 
             var join_button = document.getElementById("join-btn");
@@ -146,7 +148,9 @@
             var game_code_input = document.getElementById("game-code-input");
             game_code_input.addEventListener('input', function(e) {
                 var len = 6;
+                test_mode = false;
                 if (e.srcElement.value.startsWith(":")) {
+                    test_mode = true;
                     len = 7;
                 }
                 e.srcElement.value = e.srcElement.value.slice(0, len).toUpperCase();
@@ -164,6 +168,8 @@
             var tile_img = document.getElementById("tile-img");
             var tile_code_display = document.getElementById("tile-code-display");
             var last_drawer_display = document.getElementById("last-drawer-display");
+
+            var remain = document.getElementById("deck-size");
 
             var in_game_players = []
             var in_game_player_list = document.getElementById("in-game-player-list");
@@ -205,7 +211,11 @@
             }
 
             function join_game(game_code) {
-                websocket = new WebSocket('wss://' + window.location.host + '/game/' + encodeURIComponent(game_code));
+                var ws_url = 'wss://' + window.location.host + '/game/' + encodeURIComponent(game_code);
+                if (test_mode) {
+                    ws_url = 'ws://' + window.location.host + '/game/' + encodeURIComponent(game_code);
+                }
+                websocket = new WebSocket(ws_url);
                 websocket.addEventListener('open', function(event) {
                     websocket.send(JSON.stringify({
                         "method": "join",
@@ -225,6 +235,7 @@
                             tile_code = data['tile'];
                             update_tile(tile_code);
                             last_drawer_display.textContent = data["drawer"];
+                            remain.textContent = data["remain"].toString();
                             if (state == "in-game-undrawable") {
                                 enable_draw();
                                 state = "in-game-drawable";
@@ -255,7 +266,7 @@
                     name_input.setAttribute('disabled', '');
                 }
                 if (game_code_input.value.startsWith(":")) {
-                    server_url = "localhost:6037";
+                    test_mode = true;
                     game_code_input.value = game_code_input.value.slice(1);
                 }
                 if (join_button.textContent == 'Join') {
