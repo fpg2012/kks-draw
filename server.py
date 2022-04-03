@@ -139,7 +139,6 @@ class PlayerHandler(tornado.websocket.WebSocketHandler):
     def __init__(self, application, request, **kwargs):
         self.game = None
         self.name = None
-        self.pint
         super().__init__(application, request, **kwargs)
 
     def get_game_code(self):
