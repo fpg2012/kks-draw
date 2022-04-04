@@ -139,7 +139,7 @@ class PlayerHandler(tornado.websocket.WebSocketHandler):
     def __init__(self, application, request, **kwargs):
         self.game = None
         self.name = None
-        super().__init__(application, request, **kwargs)
+        super().__init__(application, request ,**kwargs)
 
     def get_game_code(self):
         s = re.split(r'/', self.request.path)
@@ -150,6 +150,8 @@ class PlayerHandler(tornado.websocket.WebSocketHandler):
             return ''
 
     def open(self):
+        print(self.ping_interval)
+        print(self.ping_timeout)
         global game_manager
         code = self.get_game_code()
         print('code: ', code)
@@ -236,9 +238,6 @@ if __name__ == '__main__':
         (r'/code', NewGameHandler),
         (r'/game/.*', PlayerHandler),
         (r'/(.*)', tornado.web.StaticFileHandler, { 'path': '.', 'default_filename': 'index.html' }),
-    ], settings={
-        'websocket_ping_interval': 45,
-        'websocket_ping_timeout': 10,
-    })
+    ], websocket_ping_interval=40, websocket_ping_timeout=55)
     application.listen(tornado.options.options.port)
     tornado.ioloop.IOLoop.current().start()
