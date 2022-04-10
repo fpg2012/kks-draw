@@ -80,6 +80,10 @@ class Game:
         deck.extend(['FFRRR'] * 9)
         deck.extend(['FRRRR'] * 4)
         deck.extend(['RRRRR'])
+        
+        # Princess and Dragon
+        deck.extend([f'PD-{i}' for i in range(1, 30)])
+        deck.append('PD-17')
 
         random.shuffle(deck)
         return deck

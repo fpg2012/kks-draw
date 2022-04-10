@@ -222,7 +222,7 @@
                         "name": name_input.value,
                     }));
                     state = "in-game-drawable";
-                })
+                });
                 websocket.addEventListener('message', function(event) {
                     data = JSON.parse(event.data);
                     console.log(data);
