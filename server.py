@@ -1,6 +1,7 @@
 import ssl
 import json
 from json import JSONDecodeError
+from typing import DefaultDict
 import tornado.web
 import tornado.websocket
 import tornado.ioloop
@@ -17,11 +18,13 @@ class Game:
     def __init__(self, manager):
         self.deck = self.__init_deck()
         self.conns = set()
+        self.id_to_conns = {}
         self.__code = base64.b16encode(random.randbytes(3)).decode()
         self.__draw_code = base64.b16encode(random.randbytes(2)).decode()
         self.__current_tile = 'CRFRR'
         self.last_drawer = None
         self.manager = manager
+        self.precede_evaluation = {}
     
     @property
     def deck_size(self):
@@ -33,6 +36,12 @@ class Game:
     
     def draw_tile(self, drawer):
         self.__draw_code = base64.b16encode(random.randbytes(2)).decode()
+        if self.last_drawer is not None:
+            for _, w in self.precede_evaluation[self.last_drawer.conn_id].items():
+                w /= 2
+            self.precede_evaluation[self.last_drawer.conn_id].setdefault(drawer.conn_id, 0)
+            self.precede_evaluation[self.last_drawer.conn_id][drawer.conn_id] += 1
+            print(self.precede_evaluation)
         self.last_drawer = drawer
         self.broadcast(json.dumps({
             "event": "tile",
@@ -82,8 +91,8 @@ class Game:
         deck.extend(['RRRRR'])
         
         # Princess and Dragon
-        deck.extend([f'PD-{i}' for i in range(1, 30)])
-        deck.append('PD-17')
+        # deck.extend([f'PD-{i}' for i in range(1, 30)])
+        # deck.append('PD-17')
 
         random.shuffle(deck)
         return deck
@@ -93,7 +102,11 @@ class Game:
             conn.write_message(msg)
         
     def add_conn(self, conn):
+        self.precede_evaluation[conn.conn_id] = {}
+        for ex_conn in self.conns:
+            self.precede_evaluation[conn.conn_id][ex_conn.conn_id] = 0
         self.conns.add(conn)
+        self.id_to_conns[conn.conn_id] = conn
 
     def update_user_list(self):
         self.broadcast(json.dumps({
@@ -104,9 +117,28 @@ class Game:
     
     def remove_conn(self, conn):
         self.conns.remove(conn)
+        self.id_to_conns.pop(conn.conn_id)
         if len(self.conns) == 0:
             self.manager.remove_game(self)
         self.update_user_list()
+    
+    def guess_next_drawer(self):
+        next_drawer = None
+        w_max = 0
+        for player, w in self.precede_evaluation[self.last_drawer.conn_id].items():
+            if w_max < w and self.id_to_conns.get(player) is not None:
+                next_drawer = self.id_to_conns[player]
+                w_max = w
+        return next_drawer
+
+    def inform_next_drawer(self):
+        next_drawer = self.guess_next_drawer()
+        if next_drawer is None:
+            return
+        next_drawer.write_message(json.dumps({
+            'event': 'inform_drawcode',
+            'drawcode': self.draw_code,
+        }))
 
 class GameManager:
     
@@ -143,6 +175,7 @@ class PlayerHandler(tornado.websocket.WebSocketHandler):
     def __init__(self, application, request, **kwargs):
         self.game = None
         self.name = None
+        self.conn_id = random.randint(1024, 65536)
         super().__init__(application, request ,**kwargs)
 
     def get_game_code(self):
@@ -194,6 +227,7 @@ class PlayerHandler(tornado.websocket.WebSocketHandler):
                         'event': 'draw_ok',
                         'next_draw_code': self.game.draw_code
                     }))
+                    self.game.inform_next_drawer()
                 else:
                     raise KeyError('invalid_draw')
             elif method == 'join':

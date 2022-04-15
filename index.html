@@ -249,6 +249,10 @@
                             disable_draw();
                             state = "in-game-undrawable";
                             break;
+                        case "inform_drawcode":
+                            if (state == "in-game-drawable") {
+                                draw_code_input.value = data["drawcode"];
+                            }
                         case "error":
                             if (state == "in-game-wait-for-draw-ok") {
                                 state = "in-game-drawable";
