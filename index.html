@@ -18,6 +18,14 @@
                 font-size: 14px;
                 font-family: 'Fira Sans', 'Noto Sans', BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif
             }
+            body {
+                display: flex;
+                justify-content: center;
+                height: 100vh;
+                margin: 0;
+                align-items: space-around;
+                flex-direction: column;
+            }
             main {
                 display: flex;
                 flex-direction: column;
@@ -176,6 +184,7 @@
 
             // init
             // in-game-drawable
+            // in-game-drawable-cd
             // in-game-wait-for-draw-ok
             // in-game-undrawable
             var state = 'init';
@@ -209,6 +218,10 @@
                 tile_img.setAttribute('src', './tiles/' + tile + '.png');
                 tile_code_display.textContent = tile;
             }
+
+            // function draw_cd() {
+
+            // }
 
             function join_game(game_code) {
                 var ws_url = 'wss://' + window.location.host + '/game/' + encodeURIComponent(game_code);
